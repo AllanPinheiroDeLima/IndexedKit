@@ -1,15 +1,22 @@
-
+import { v7 as GenId } from "uuid";
+import { DatabaseNotDefinedError } from "./errors/DatabaseNotDefined.error";
+type DataStoreOptions = {
+  idGenerator: (...args: any[]) => string
+  idKey: string
+}
 
 export class DataStore {
   protected isOpen: boolean = false;
-  protected database: IDBDatabase;
+  protected database!: IDBDatabase;
+  protected dataStoreOptions: DataStoreOptions;
 
   private databaseName: string;
   private collectionName: string;
 
-  constructor(databaseName: string, collectionName: string, version?: number) {
+  constructor(databaseName: string, collectionName: string, version?: number, options?: DataStoreOptions) {
     this.databaseName = databaseName;
     this.collectionName = collectionName;
+    this.dataStoreOptions = options ?? {} as DataStoreOptions;
   }
 
   public async init(): Promise<IDBDatabase> {
@@ -42,17 +49,25 @@ export class DataStore {
     });
   }
 
+  private validateDatabaseExistence() {
+    if (!this.database) {
+      throw new DatabaseNotDefinedError("Database not initialized");
+    }
+  }
+
   private createCollection(collectionName: string) {
+    this.validateDatabaseExistence();
+
     if (this.database.objectStoreNames.contains(collectionName)) {
       return;
     }
 
     this.database.createObjectStore(collectionName, {
-      keyPath: "id"
+      keyPath: this.dataStoreOptions?.idKey ?? "id"
     });
   }
 
-  private async openDatabase(databaseName?: string) {
+  private async openDatabase(databaseName?: string): Promise<IDBDatabase> {
     this.databaseName = databaseName ?? this.databaseName;
     return this.init();
   }
@@ -61,6 +76,8 @@ export class DataStore {
     type: "readonly" | "readwrite",
     collectionName?: string
   ) {
+    this.validateDatabaseExistence();
+
     return this.database.transaction(
       [collectionName ?? this.collectionName],
       type
@@ -73,6 +90,10 @@ export class DataStore {
 
   public async findAll<T>(findOptions?: Record<string, unknown>) {
     const transaction = this.startTransaction("readonly");
+  }
+
+  private generateId() {
+    return this.dataStoreOptions?.idGenerator?.() ?? GenId({ msecs: Date.now() })
   }
 
   public async insert<T>(doc: T, collectionName?: string): Promise<T> {
@@ -88,7 +109,7 @@ export class DataStore {
         console.log(event);
       };
 
-      const id = Math.random();
+      const id = this.generateId();
       
       const docToSave = {
         id,
@@ -97,8 +118,7 @@ export class DataStore {
       
       const request = collection.add(docToSave);
 
-      request.onsuccess = (event) => {
-        console.log("INserted", event.target?.result);
+      request.onsuccess = () => {
         resolve(docToSave)
       };
 
