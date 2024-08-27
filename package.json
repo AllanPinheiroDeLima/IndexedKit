@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@typescript/lib-dom": "npm:@types/web@^0.0.157"
+    "@typescript/lib-dom": "npm:@types/web@^0.0.157",
+    "happy-dom": "^15.0.0",
+    "vitest": "^2.0.5"
   }
 }
