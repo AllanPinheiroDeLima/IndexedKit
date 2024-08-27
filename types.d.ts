@@ -11,4 +11,14 @@ namespace globalThis {
     onsuccess: (this: IDBOpenDBRequest, ev: DbEvent<IDBDatabase>) => any
     onerror: (this: IDBOpenDBRequest, ev: Event) => any
   }
+
+  // change cursor success event
+  interface IDBCursorRequest {
+    onsuccess: (this: IDBRequest<T>, ev: DbEvent<T>) => any
+    onerror: (this: IDBRequest<T>, ev: Event) => any
+  }
+
+  interface IDBObjectStore extends IDBRequest<T> {
+    openCursor(): IDBCursorRequest<T>
+  }
 }

@@ -1,11 +1,41 @@
 import { v7 as GenId } from "uuid";
 import { DatabaseNotDefinedError } from "./errors/DatabaseNotDefined.error";
-type DataStoreOptions = {
-  idGenerator: (...args: any[]) => string
-  idKey: string
+type IndexOpt = {
+  name: string
+  keyPath: string
+  unique: boolean
 }
 
-export class DataStore {
+type DataStoreOptions = {
+  idGenerator?: (...args: any[]) => string
+  idKey?: string
+  version?: number
+  indexes?: Array<IndexOpt>
+}
+
+type FindModifiers = {
+  $eq?: string
+  $gt?: number
+  $gte?: number
+  $lt?: number
+  $lte?: number
+  $ne?: string
+  $in?: string[]
+  $nin?: string[]
+  $regex?: RegExp
+}
+
+type FindModifiersWithType<T> = {
+  [K in keyof T]?: FindModifiers | T[K];
+}
+
+type FindOptions<T> = {
+  limit?: number
+  offset?: number
+  where?: FindModifiersWithType<T>
+}
+
+export class DataStore<T = {}> {
   protected isOpen: boolean = false;
   protected database!: IDBDatabase;
   protected dataStoreOptions: DataStoreOptions;
@@ -13,7 +43,7 @@ export class DataStore {
   private databaseName: string;
   private collectionName: string;
 
-  constructor(databaseName: string, collectionName: string, version?: number, options?: DataStoreOptions) {
+  constructor(databaseName: string, collectionName: string, options?: DataStoreOptions) {
     this.databaseName = databaseName;
     this.collectionName = collectionName;
     this.dataStoreOptions = options ?? {} as DataStoreOptions;
@@ -51,14 +81,13 @@ export class DataStore {
 
   private validateDatabaseExistence() {
     if (!this.database) {
-      // throw new DatabaseNotDefinedError("Database not initialized");
-      Promise.reject(new DatabaseNotDefinedError("Database not initialized"));
+      return new DatabaseNotDefinedError("Database not initialized");
     }
+
+    return null
   }
 
   private createCollection(collectionName: string) {
-    this.validateDatabaseExistence();
-
     if (this.database.objectStoreNames.contains(collectionName)) {
       return;
     }
@@ -69,47 +98,42 @@ export class DataStore {
   }
 
   private async openDatabase(databaseName?: string): Promise<IDBDatabase> {
-    this.validateDatabaseExistence();
     this.databaseName = databaseName ?? this.databaseName;
     return this.init();
-  }
-
-  private startTransaction(
-    type: "readonly" | "readwrite",
-    collectionName?: string
-  ) {
-    this.validateDatabaseExistence();
-
-    return this.database.transaction(
-      [collectionName ?? this.collectionName],
-      type
-    );
   }
 
   private getCollection(transaction: IDBTransaction, collectionName?: string) {
     return transaction.objectStore(collectionName ?? this.collectionName);
   }
 
-  public async findAll<T>(findOptions?: Record<string, unknown>) {
-    const transaction = this.startTransaction("readonly");
-  }
-
   private generateId() {
     return this.dataStoreOptions?.idGenerator?.() ?? GenId({ msecs: Date.now() })
   }
 
+  private setupTransaction(database: IDBDatabase, type: IDBTransactionMode) {
+    const transaction = database.transaction(
+      [this.collectionName],
+      type
+    );
+
+    transaction.onerror = (event) => {
+      console.log(event);
+    };
+
+    return transaction;
+  }
+
   public async insert<T>(doc: T, collectionName?: string): Promise<T> {
     return new Promise(async (resolve, reject) => {
-      const database = await this.openDatabase(this.databaseName);
-      const transaction = database.transaction(
-        [this.collectionName],
-        "readwrite"
-      );
-      const collection = this.getCollection(transaction, collectionName);
+      const doesDatabaseNotExist = await this.validateDatabaseExistence();
+      
+      if (doesDatabaseNotExist) {
+        return reject(doesDatabaseNotExist)
+      }
 
-      transaction.onerror = (event) => {
-        console.log(event);
-      };
+      const database = await this.openDatabase(this.databaseName);
+      const transaction = this.setupTransaction(database, "readwrite");
+      const collection = this.getCollection(transaction, collectionName);
 
       const id = this.generateId();
       
@@ -132,13 +156,69 @@ export class DataStore {
       console.log("finished");
     });
   }
+
+  public async upsert<T>(doc: T, collectionName?: string): Promise<T> {}
+
+  public async update<T>(doc: T, collectionName?: string): Promise<T> {}
+
+  public async remove<T>(id: string, collectionName?: string): Promise<void> {}
+
+  public async clearCollection(collectionName?: string): Promise<void> {
+
+  }
+
+  public async findAll(findOptions?: FindOptions<T>, collectionName?: string) {
+    return new Promise(async (resolve, reject) => {
+      const isDatabaseInvalidError = this.validateDatabaseExistence();
+      if (isDatabaseInvalidError) {
+        return reject(isDatabaseInvalidError)
+      }
+      
+      const database = await this.openDatabase(this.databaseName);
+      const transaction = this.setupTransaction(database, "readonly");
+
+      const collection = this.getCollection(transaction, collectionName);
+
+      const acc: T[] = [];
+
+      collection.openCursor().onsuccess = (event: DbEvent<IDBCursorWithValue>) => {
+        const cursor = event.target?.result;
+
+        if (cursor) {
+          if (findOptions?.where) {
+            const keys = Object.keys(findOptions.where);
+            
+            const key = keys[0];
+            const value = findOptions.where[key];
+            
+            if (cursor.value[key] === value) {
+              acc.push(cursor.value);
+              cursor.continue();
+            } else {
+              cursor.continue();
+            }
+          } else {
+            acc.push(cursor.value);
+            cursor.continue();
+          }
+
+        } else {
+          resolve(acc);
+        }
+      }
+    })
+  }
+
+  public async findOne<T>(findOptions: Record<string, unknown>, collectionName?: string): Promise<T & { id: string }> {
+    return {}
+  }
 }
 
-async function main() {
-  const datastore = new DataStore("meudatabase", "exames");
-  console.log(await datastore.init());
+// async function main() {
+//   const datastore = new DataStore("meudatabase", "exames");
+//   console.log(await datastore.init());
 
-  await datastore.insert({ name: "Allan" });
-}
+//   await datastore.insert({ name: "Allan" });
+// }
 
-main();
+// main();
