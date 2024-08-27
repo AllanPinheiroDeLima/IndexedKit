@@ -12,7 +12,9 @@
   "license": "ISC",
   "devDependencies": {
     "@typescript/lib-dom": "npm:@types/web@^0.0.157",
+    "fake-indexeddb": "^6.0.0",
     "happy-dom": "^15.0.0",
+    "vite-tsconfig-paths": "^5.0.1",
     "vitest": "^2.0.5"
   }
 }

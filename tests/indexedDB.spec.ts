@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-
+import { DataStore } from "@src/index"
 describe("indexedDB", () => {
-  it("Should work", () => {
-    expect(1 + 1).toBe(2);
+  it("Should work", async () => {
+    const datastore = new DataStore("test", "test");
+    await datastore.init()
   })
 })

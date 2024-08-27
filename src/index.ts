@@ -1,6 +1,6 @@
 
 
-class DataStore {
+export class DataStore {
   protected isOpen: boolean = false;
   protected database: IDBDatabase;
 
