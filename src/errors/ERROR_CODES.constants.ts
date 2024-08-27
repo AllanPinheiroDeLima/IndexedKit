@@ -1,3 +1,4 @@
 export const ERROR_CODES = {
-  COD001: "Database not initialized",
+  COD001: "DATABASE_NOT_INITIALIZED",
+  CODOO2: "Collection not initialized",
 }

@@ -51,7 +51,8 @@ export class DataStore {
 
   private validateDatabaseExistence() {
     if (!this.database) {
-      throw new DatabaseNotDefinedError("Database not initialized");
+      // throw new DatabaseNotDefinedError("Database not initialized");
+      Promise.reject(new DatabaseNotDefinedError("Database not initialized"));
     }
   }
 
@@ -68,6 +69,7 @@ export class DataStore {
   }
 
   private async openDatabase(databaseName?: string): Promise<IDBDatabase> {
+    this.validateDatabaseExistence();
     this.databaseName = databaseName ?? this.databaseName;
     return this.init();
   }
