@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { loadEnv } from "vite";
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
@@ -8,5 +9,12 @@ export default defineConfig({
     root: './tests',
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.ts'],
+    env: loadEnv('', process.cwd(), ''),
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './coverage',
+      exclude: ['**/node_modules/**'],
+      provider: 'istanbul' // or 'v8'
+    },
   },
 })

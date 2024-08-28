@@ -13,8 +13,8 @@ describe("findAll", () => {
     var request = indexedDB.open("test", 3);
 
     request.onupgradeneeded = function () {
-        var db = request.result;
-        var store = db.createObjectStore("books", {keyPath: "isbn"});
+        const db = request.result;
+        const store = db.createObjectStore("books", {keyPath: "isbn"});
         store.createIndex("by_title", "title", {unique: true});
 
         store.put({title: "Quarry Memories", author: "Fred", isbn: 123456});

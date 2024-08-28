@@ -1,5 +1,6 @@
 import { v7 as GenId } from "uuid";
 import { DatabaseNotDefinedError } from "./errors/DatabaseNotDefined.error";
+import { InvalidInputError } from "./errors/InvalidaInput.error";
 type IndexOpt = {
   name: string
   keyPath: string
@@ -35,7 +36,7 @@ type FindOptions<T> = {
   where?: FindModifiersWithType<T>
 }
 
-export class DataStore<T = {}> {
+export class DataStore<T extends Object> {
   protected isOpen: boolean = false;
   protected database!: IDBDatabase;
   protected dataStoreOptions: DataStoreOptions;
@@ -122,9 +123,24 @@ export class DataStore<T = {}> {
 
     return transaction;
   }
+  private isInputValid(input: unknown) {
+    const isObject = input === Object(input);
+    if ((Array.isArray(input) || isObject) && typeof input !== "function") {
+      return true
+    }
+    
+    return new InvalidInputError("Invalid input");
+  }
 
-  public async insert<T>(doc: T, collectionName?: string): Promise<T> {
+  public async insert<T extends {}>(doc: T & { id?: string }, collectionName?: string): Promise<T & { id?: string }> {
+
     return new Promise(async (resolve, reject) => {
+      const isInputValid = this.isInputValid(doc);
+
+      if (isInputValid instanceof InvalidInputError) {
+        return reject(isInputValid);
+      }
+
       const doesDatabaseNotExist = await this.validateDatabaseExistence();
       
       if (doesDatabaseNotExist) {
@@ -137,14 +153,24 @@ export class DataStore<T = {}> {
 
       const id = this.generateId();
       
-      const docToSave = {
-        id,
-        ...doc
+      let docToSave = {
+        id
+      };
+
+      // SE ELE NÃO TIVER UM ID GENERATOR E ENVIAR UM ID, ELE VAI REMOVER O ID DO OBJETO
+      // MAS SE ELE TIVER, O USUÁRIO PODE MANDAR O ID QUE ELE QUISER
+      if (!this.dataStoreOptions.idGenerator) {
+        const { id: _, ...docWithoutId } = doc;
+        docToSave = {
+          ...docToSave,
+          ...docWithoutId
+        }
       }
       
       const request = collection.add(docToSave);
 
       request.onsuccess = () => {
+        console.debug("inserted", docToSave);
         resolve(docToSave)
       };
 
@@ -152,8 +178,6 @@ export class DataStore<T = {}> {
         console.log("error on insert", event);
         reject(event)
       };
-
-      console.log("finished");
     });
   }
 
