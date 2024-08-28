@@ -36,6 +36,8 @@ type FindOptions<T> = {
   where?: FindModifiersWithType<T>
 }
 
+type BaseResponse<T> = { [K in keyof T]: T[K] }
+
 export class DataStore<T extends Object> {
   protected isOpen: boolean = false;
   protected database!: IDBDatabase;
@@ -89,6 +91,7 @@ export class DataStore<T extends Object> {
   }
 
   private createCollection(collectionName: string) {
+    console.log("datastore da collection", this.dataStoreOptions?.idKey)
     if (this.database.objectStoreNames.contains(collectionName)) {
       return;
     }
@@ -125,14 +128,14 @@ export class DataStore<T extends Object> {
   }
   private isInputValid(input: unknown) {
     const isObject = input === Object(input);
-    if ((Array.isArray(input) || isObject) && typeof input !== "function") {
+    if ((!Array.isArray(input) && isObject) && typeof input !== "function") {
       return true
     }
     
     return new InvalidInputError("Invalid input");
   }
 
-  public async insert<T extends {}>(doc: T & { id?: string }, collectionName?: string): Promise<T & { id?: string }> {
+  public async insert<T extends {}>(doc: T & { id?: string }, collectionName?: string): Promise<BaseResponse<T>> {
 
     return new Promise(async (resolve, reject) => {
       const isInputValid = this.isInputValid(doc);
@@ -150,23 +153,14 @@ export class DataStore<T extends Object> {
       const database = await this.openDatabase(this.databaseName);
       const transaction = this.setupTransaction(database, "readwrite");
       const collection = this.getCollection(transaction, collectionName);
-
+      
       const id = this.generateId();
       
       let docToSave = {
-        id
+        ...doc,
+        [this.dataStoreOptions.idKey ?? "id"]: this.dataStoreOptions.idGenerator ? this.dataStoreOptions.idGenerator() : id
       };
-
-      // SE ELE NÃO TIVER UM ID GENERATOR E ENVIAR UM ID, ELE VAI REMOVER O ID DO OBJETO
-      // MAS SE ELE TIVER, O USUÁRIO PODE MANDAR O ID QUE ELE QUISER
-      if (!this.dataStoreOptions.idGenerator) {
-        const { id: _, ...docWithoutId } = doc;
-        docToSave = {
-          ...docToSave,
-          ...docWithoutId
-        }
-      }
-      
+      console.log(docToSave)
       const request = collection.add(docToSave);
 
       request.onsuccess = () => {
