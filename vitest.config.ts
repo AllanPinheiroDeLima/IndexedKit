@@ -10,6 +10,7 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.ts'],
     env: loadEnv('', process.cwd(), ''),
+    reporters: ["verbose"],
     coverage: {
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage',
