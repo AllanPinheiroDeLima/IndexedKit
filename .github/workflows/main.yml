@@ -6,6 +6,10 @@ on:
     branches:
     - main
     - release/*
+env:
+  DATASTORE_DATABASE_NAME: "teste"
+  DATASTORE_COLLECTION_NAME: "books"
+
 jobs:
   test:
     name: Test on node ${{ matrix.node_version }} and ${{ matrix.os }}
