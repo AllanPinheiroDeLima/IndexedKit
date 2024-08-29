@@ -1,14 +1,13 @@
 import { DataStore } from "@src/index";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { BookSchema } from "../find/FindAll.spec";
-const FDBFactory = require("fake-indexeddb/lib/FDBFactory");
 
 describe("removeById", () => {
   const databaseName = process.env.DATASTORE_DATABASE_NAME;
   const collectionName = process.env.DATASTORE_COLLECTION_NAME;
 
   afterEach(() => {
-    global.indexedDB = new FDBFactory();
+    global.indexedDB = new IDBFactory();
   });
 
   it("Should remove an item by id", () => new Promise(async done => {

@@ -2,8 +2,7 @@ import { DatabaseNotDefinedError } from "@src/errors/DatabaseNotDefined.error";
 import { InvalidInputError } from "@src/errors/InvalidaInput.error";
 import { DataStore } from "@src/index";
 import { afterEach, describe, expect, it } from "vitest";
-const FDBFactory = require("fake-indexeddb/lib/FDBFactory");
-
+import {IDBFactory} from "fake-indexeddb"
 describe("Insert", () => {
   const databaseName = process.env.DATASTORE_DATABASE_NAME;
   const collectionName = process.env.DATASTORE_COLLECTION_NAME;
@@ -11,7 +10,7 @@ describe("Insert", () => {
   const dataToInsert = Object.freeze({ title: "Quarry Memories", author: "Fred", isbn: 123456 });
   
   afterEach(async () => {
-    global.indexedDB = new FDBFactory();
+    global.indexedDB = new IDBFactory();
   })
 
   it("should throw an error when not using init before using the insert method", async () => {
