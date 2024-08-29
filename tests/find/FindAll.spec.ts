@@ -1,11 +1,11 @@
 import { DataStore } from "@src/index";
 import { beforeEach, describe, expect, it } from "vitest";
 
-type BookSchema = {
+export type BookSchema = {
   title: string;
   author: string;
   isbn: number;
-}
+} & { id?: string }
 
 describe("findAll", () => {
 

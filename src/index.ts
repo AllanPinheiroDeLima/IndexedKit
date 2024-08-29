@@ -91,7 +91,6 @@ export class DataStore<T extends Object> {
   }
 
   private createCollection(collectionName: string) {
-    console.log("datastore da collection", this.dataStoreOptions?.idKey)
     if (this.database.objectStoreNames.contains(collectionName)) {
       return;
     }
@@ -164,7 +163,6 @@ export class DataStore<T extends Object> {
       const request = collection.add(docToSave);
 
       request.onsuccess = () => {
-        console.debug("inserted", docToSave);
         resolve(docToSave)
       };
 
@@ -175,11 +173,64 @@ export class DataStore<T extends Object> {
     });
   }
 
-  public async upsert<T>(doc: T, collectionName?: string): Promise<T> {}
+  public async upsert(doc: T, findOptions: FindOptions<T>, collectionName?: string): Promise<T> {
+    return new Promise(async (resolve, reject) => {
+      const isInputValid = this.isInputValid(doc);
+
+      if (isInputValid instanceof InvalidInputError) {
+        return reject(isInputValid);
+      }
+
+      const isDatabaseInvalidError = this.validateDatabaseExistence();
+      if (isDatabaseInvalidError) {
+        return reject(isDatabaseInvalidError)
+      }
+      
+      const database = await this.openDatabase(this.databaseName);
+      const transaction = this.setupTransaction(database, "readwrite");
+
+      const collection = this.getCollection(transaction, collectionName);
+
+      const request = collection.put(doc);
+
+      request.onsuccess = () => {
+        resolve(doc)
+      };
+
+      request.onerror = (event) => {
+        console.log("error on upsert", event);
+        reject(event)
+      };
+    }); 
+  }
 
   public async update<T>(doc: T, collectionName?: string): Promise<T> {}
 
-  public async remove<T>(id: string, collectionName?: string): Promise<void> {}
+  public async removeByIdKey(idKey: string | number, collectionName?: string): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      const isDatabaseInvalidError = this.validateDatabaseExistence();
+      if (isDatabaseInvalidError) {
+        return reject(isDatabaseInvalidError)
+      }
+      
+      const database = await this.openDatabase(this.databaseName);
+      const transaction = this.setupTransaction(database, "readwrite");
+
+      const collection = this.getCollection(transaction, collectionName);
+
+      const request = collection.delete(idKey);
+
+      request.onsuccess = () => {
+        console.debug(`Item com ID ${idKey} removido com sucesso.`);
+        resolve();
+      }
+
+      request.onerror = (event) => {
+        console.log("error on delete", event);
+        reject(event)
+      }
+    });
+  }
 
   public async clearCollection(collectionName?: string): Promise<void> {
 
@@ -231,12 +282,3 @@ export class DataStore<T extends Object> {
     return {}
   }
 }
-
-// async function main() {
-//   const datastore = new DataStore("meudatabase", "exames");
-//   console.log(await datastore.init());
-
-//   await datastore.insert({ name: "Allan" });
-// }
-
-// main();

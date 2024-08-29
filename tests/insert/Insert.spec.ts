@@ -117,6 +117,4 @@ describe("Insert", () => {
       isbn: "teste"
     }));
   })
-
-  it.todo("should create the indexes correctly when defined", async () => {})
 })
