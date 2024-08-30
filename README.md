@@ -1,4 +1,4 @@
-Claro! Vamos adicionar exemplos de uso para cada método no README. Aqui está a versão atualizada:
+![example workflow](https://github.com/AllanPinheiroDeLima/indexedDBWrapper/actions/workflows/main.yml/badge.svg)
 
 ```markdown
 # SimpleDataStore
