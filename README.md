@@ -1,4 +1,4 @@
-Claro! Com base no código que você forneceu, aqui está uma sugestão de README, incluindo um nome para o projeto. O nome sugerido é **"SimpleDataStore"**. Sinta-se à vontade para modificar ou ajustar conforme necessário.
+Claro! Vamos adicionar exemplos de uso para cada método no README. Aqui está a versão atualizada:
 
 ```markdown
 # SimpleDataStore
@@ -29,23 +29,59 @@ const store = new DataStore('myDatabase', 'myCollection');
 
 // Inicialize o banco de dados
 await store.init();
-
-// Insira um documento
-await store.insert({ name: 'John Doe', age: 30 });
-
-// Busque todos os documentos
-const allDocs = await store.findAll();
-console.log(allDocs);
 ```
 
 ## Métodos
 
-- **init()**: Inicializa o banco de dados.
-- **insert(doc: T)**: Insere um novo documento na coleção.
-- **upsert(doc: T)**: Atualiza um documento existente ou insere um novo.
-- **removeByIdKey(idKey: string | number)**: Remove um documento pelo seu ID.
-- **findAll()**: Retorna todos os documentos da coleção.
-- **findOne(findOptions: Record<string, unknown>)**: Busca um único documento com base em critérios especificados.
+### `init()`
+Inicializa o banco de dados. **É obrigatório chamar este método antes de qualquer outra operação**.
+
+```typescript
+await store.init(); // Inicializa o banco de dados
+```
+
+### `insert(doc: T)`
+Insere um novo documento na coleção.
+
+```typescript
+const newDoc = { name: 'John Doe', age: 30 };
+const insertedDoc = await store.insert(newDoc);
+console.log('Documento inserido:', insertedDoc);
+```
+
+### `upsert(doc: T, findOptions: FindOptions<T>)`
+Atualiza um documento existente ou insere um novo se ele não existir.
+
+```typescript
+const updatedDoc = { id: '1', name: 'John Doe', age: 31 };
+const upsertedDoc = await store.upsert(updatedDoc, { where: { id: '1' } });
+console.log('Documento atualizado ou inserido:', upsertedDoc);
+```
+
+### `removeByIdKey(idKey: string | number)`
+Remove um documento pelo seu ID.
+
+```typescript
+const idToRemove = '1';
+await store.removeByIdKey(idToRemove);
+console.log(`Documento com ID ${idToRemove} removido com sucesso.`);
+```
+
+### `findAll(findOptions?: FindOptions<T>)`
+Retorna todos os documentos da coleção.
+
+```typescript
+const allDocs = await store.findAll();
+console.log('Todos os documentos:', allDocs);
+```
+
+### `findOne(findOptions: Record<string, unknown>)`
+Busca um único documento com base em critérios especificados.
+
+```typescript
+const foundDoc = await store.findOne({ where: { name: 'John Doe' } });
+console.log('Documento encontrado:', foundDoc);
+```
 
 ## Contribuição
 
@@ -55,8 +91,3 @@ Contribuições são bem-vindas! Sinta-se à vontade para abrir um pull request 
 
 Esse projeto está licenciado sob a [MIT License](LICENSE).
 ```
-
-### Observações
-- Adicionei uma seção de métodos que resume as funcionalidades principais.
-- Você pode querer incluir exemplos de uso mais detalhados conforme necessário.
-- Certifique-se de ajustar o nome do pacote e o caminho de importação de acordo com a estrutura do seu projeto.
