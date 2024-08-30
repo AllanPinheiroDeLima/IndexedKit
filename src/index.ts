@@ -1,7 +1,8 @@
 import { v7 as GenId } from "uuid";
 import { DatabaseNotDefinedError } from "./errors/DatabaseNotDefined.error";
 import { InvalidInputError } from "./errors/InvalidaInput.error";
-import { FindOptions } from "./types/datastore.types";
+import { DataStoreOptions, FindOptions } from "./types/datastore.types";
+import { SearchEngine } from "./SearchEngine";
 
 export class DataStore<T extends Object> {
   protected isOpen: boolean = false;
@@ -24,7 +25,7 @@ export class DataStore<T extends Object> {
       DBOpenRequest.onsuccess = (event) => {
         console.log("onsuccess");
 
-        const database = event.target.result;
+        const database = event.target?.result;
         this.database = database;
 
         resolve(database);
@@ -32,10 +33,14 @@ export class DataStore<T extends Object> {
 
       DBOpenRequest.onupgradeneeded = (event) => {
         console.log("onupgradeneeded");
-        const database = event.target.result;
+        const database = event.target?.result;
         this.database = database;
 
-        this.createCollection(this.collectionName);
+        const objectStore = this.createCollection(this.collectionName);
+        
+        this.dataStoreOptions.indexes?.forEach(index => {
+          objectStore?.createIndex(index.name, index.keyPath, { unique: index.unique });
+        })
 
         resolve(database);
       };
@@ -60,7 +65,7 @@ export class DataStore<T extends Object> {
       return;
     }
 
-    this.database.createObjectStore(collectionName, {
+    return this.database.createObjectStore(collectionName, {
       keyPath: this.dataStoreOptions?.idKey ?? "id"
     });
   }
@@ -225,7 +230,6 @@ export class DataStore<T extends Object> {
 
       const acc: T[] = [];
 
-      const offset = findOptions?.offset ?? 0;
       let iterationCounter = 0;
 
       collection.openCursor().onsuccess = (event: DbEvent<IDBCursorWithValue>) => {
