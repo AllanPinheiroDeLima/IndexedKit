@@ -4,6 +4,9 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  esbuild: {
+    drop: ['console', 'debugger']
+  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'), // ponto de entrada da sua biblioteca

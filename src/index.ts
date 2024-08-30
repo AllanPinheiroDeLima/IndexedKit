@@ -19,6 +19,10 @@ export class DataStore<T extends Object> {
   }
 
   public async init(): Promise<IDBDatabase> {
+    if (!("structuredClone" in globalThis)) {
+      globalThis.structuredClone = require("@ungap/structured-clone");
+    }
+
     return new Promise((resolve, reject) => {
       const DBOpenRequest = window.indexedDB.open(this.databaseName);
 

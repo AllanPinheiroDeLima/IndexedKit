@@ -44,5 +44,15 @@ describe("indexedDB instance", () => {
       };
     })
 
+    it.only("Should polyfill the structureClone algorithm if it doesn't exist", async () => {
+      // @ts-expect-error
+      delete global.structuredClone
+
+      const datastore = new DataStore(databaseName, collectionName);
+      await datastore.init();
+
+      expect(globalThis.structuredClone).toBeDefined();
+    })
+
   })
 })
