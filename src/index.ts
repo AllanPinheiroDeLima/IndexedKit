@@ -1,42 +1,7 @@
 import { v7 as GenId } from "uuid";
 import { DatabaseNotDefinedError } from "./errors/DatabaseNotDefined.error";
 import { InvalidInputError } from "./errors/InvalidaInput.error";
-type IndexOpt = {
-  name: string
-  keyPath: string
-  unique: boolean
-}
-
-type DataStoreOptions = {
-  idGenerator?: (...args: any[]) => string
-  idKey?: string
-  version?: number
-  indexes?: Array<IndexOpt>
-}
-
-type FindModifiers = {
-  $eq?: string
-  $gt?: number
-  $gte?: number
-  $lt?: number
-  $lte?: number
-  $ne?: string
-  $in?: string[]
-  $nin?: string[]
-  $regex?: RegExp
-}
-
-type FindModifiersWithType<T> = {
-  [K in keyof T]?: FindModifiers | T[K];
-}
-
-type FindOptions<T> = {
-  limit?: number
-  offset?: number
-  where?: FindModifiersWithType<T>
-}
-
-type BaseResponse<T> = { [K in keyof T]: T[K] }
+import { FindOptions } from "./types/datastore.types";
 
 export class DataStore<T extends Object> {
   protected isOpen: boolean = false;
@@ -120,7 +85,7 @@ export class DataStore<T extends Object> {
     );
 
     transaction.onerror = (event) => {
-      console.log(event);
+      console.log("error in transaction", event);
     };
 
     return transaction;
@@ -159,7 +124,7 @@ export class DataStore<T extends Object> {
         ...doc,
         [this.dataStoreOptions.idKey ?? "id"]: this.dataStoreOptions.idGenerator ? this.dataStoreOptions.idGenerator() : id
       };
-      console.log(docToSave)
+      
       const request = collection.add(docToSave);
 
       request.onsuccess = () => {
@@ -176,7 +141,7 @@ export class DataStore<T extends Object> {
   public async upsert(doc: T, findOptions: FindOptions<T>, collectionName?: string): Promise<T> {
     return new Promise(async (resolve, reject) => {
       const isInputValid = this.isInputValid(doc);
-
+      
       if (isInputValid instanceof InvalidInputError) {
         return reject(isInputValid);
       }
@@ -236,7 +201,17 @@ export class DataStore<T extends Object> {
 
   }
 
-  public async findAll(findOptions?: FindOptions<T>, collectionName?: string) {
+  private validateOffset(offset: number = 0, iterationCounter: number) {
+    return iterationCounter >= offset;
+  }
+
+  private validateLimit(resultLength: number = 0, limit: null | number): undefined | boolean {
+    if (!limit) return;
+
+    return resultLength >= limit
+  }
+
+  public async findAll(findOptions?: FindOptions<T>, collectionName?: string): Promise<T[]> {
     return new Promise(async (resolve, reject) => {
       const isDatabaseInvalidError = this.validateDatabaseExistence();
       if (isDatabaseInvalidError) {
@@ -250,10 +225,26 @@ export class DataStore<T extends Object> {
 
       const acc: T[] = [];
 
+      const offset = findOptions?.offset ?? 0;
+      let iterationCounter = 0;
+
       collection.openCursor().onsuccess = (event: DbEvent<IDBCursorWithValue>) => {
         const cursor = event.target?.result;
 
-        if (cursor) {
+        // const hasLimitBeenReached = findOptions?.limit && acc.length >= findOptions?.limit;
+        const hasLimitBeenReached = this.validateLimit(acc.length, findOptions?.limit ?? null);
+        const hasOffsetBeenReached = this.validateOffset(findOptions?.offset ?? 0, iterationCounter);
+        
+        iterationCounter++
+
+        if (cursor && !hasLimitBeenReached) {
+          // APLICAÇÃO DO OFFSET DE DADOS
+
+          if (!hasOffsetBeenReached) {
+            cursor.continue();
+            return
+          }
+
           if (findOptions?.where) {
             const keys = Object.keys(findOptions.where);
             
@@ -270,7 +261,6 @@ export class DataStore<T extends Object> {
             acc.push(cursor.value);
             cursor.continue();
           }
-
         } else {
           resolve(acc);
         }
@@ -279,6 +269,6 @@ export class DataStore<T extends Object> {
   }
 
   public async findOne<T>(findOptions: Record<string, unknown>, collectionName?: string): Promise<T & { id: string }> {
-    return {}
+    return {} as T & { id: string }
   }
 }

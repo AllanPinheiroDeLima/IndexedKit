@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     name: 'happy-dom',
     root: './tests',
+    globals: true,
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.ts'],
     env: loadEnv('', process.cwd(), ''),

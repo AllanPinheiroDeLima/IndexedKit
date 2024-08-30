@@ -8,13 +8,15 @@ export type BookSchema = {
 } & { id?: string }
 
 describe("findAll", () => {
+  const databaseName = process.env.DATASTORE_DATABASE_NAME;
+  const collectionName = process.env.DATASTORE_COLLECTION_NAME;
 
   beforeEach(() => {
-    var request = indexedDB.open("test", 3);
+    var request = indexedDB.open(databaseName, 3);
 
     request.onupgradeneeded = function () {
         const db = request.result;
-        const store = db.createObjectStore("books", {keyPath: "isbn"});
+        const store = db.createObjectStore(collectionName, {keyPath: "isbn"});
         store.createIndex("by_title", "title", {unique: true});
 
         store.put({title: "Quarry Memories", author: "Fred", isbn: 123456});
@@ -24,7 +26,7 @@ describe("findAll", () => {
   })
 
   it("Should find all when no options are passed", async () => {
-    const datastore = new DataStore<BookSchema>("test", "books");
+    const datastore = new DataStore<BookSchema>(databaseName, collectionName);
     await datastore.init();
 
     const data = await datastore.findAll();
@@ -32,7 +34,7 @@ describe("findAll", () => {
   })
 
   it("Should find one item with ISBN 234567", async () => {
-    const datastore = new DataStore<BookSchema>("test", "books");
+    const datastore = new DataStore<BookSchema>(databaseName, collectionName);
     await datastore.init();
 
     const findOnlyOneByISBN = await datastore.findAll({
@@ -45,7 +47,7 @@ describe("findAll", () => {
   })
 
   it("Should find one item with title Quarry Memories", async () => {
-    const datastore = new DataStore<BookSchema>("test", "books");
+    const datastore = new DataStore<BookSchema>(databaseName, collectionName);
     await datastore.init();
 
     const findOnlyOneByTitle = await datastore.findAll({
@@ -58,7 +60,7 @@ describe("findAll", () => {
   })
 
   it("Should find two items when author is set to Fred", async () => {
-    const datastore = new DataStore<BookSchema>("test", "books");
+    const datastore = new DataStore<BookSchema>(databaseName, collectionName);
     await datastore.init();
 
     const data = await datastore.findAll({
@@ -68,5 +70,40 @@ describe("findAll", () => {
     });
 
     expect(data).length(2)
+  })
+
+  it("Should apply the limit when set", async () => {
+    const datastore = new DataStore<BookSchema>(databaseName, collectionName);
+    await datastore.init();
+
+    const dataLimitedBy1 = await datastore.findAll({
+      limit: 1
+    });
+
+    const dataLimitedBy2 = await datastore.findAll({
+      limit: 2
+    });
+
+    expect(dataLimitedBy1).length(1)
+    expect(dataLimitedBy2).length(2)
+  });
+
+  it("Should apply the offset when bring out the docs", async () => {
+    const datastore = new DataStore<BookSchema>(databaseName, collectionName);
+    await datastore.init();
+
+    const dataLimitedOffsetedBy1 = await datastore.findAll({
+      offset: 1
+    });
+
+    const dataLimitedOffsetedBy2 = await datastore.findAll({
+      offset: 2
+    });
+
+    expect(dataLimitedOffsetedBy1).length(2)
+    expect(dataLimitedOffsetedBy1.map(data => data.isbn)).toStrictEqual([234567, 345678])
+    
+    expect(dataLimitedOffsetedBy2).length(1)
+    expect(dataLimitedOffsetedBy2.map(data => data.isbn)).toStrictEqual([345678])
   })
 })
