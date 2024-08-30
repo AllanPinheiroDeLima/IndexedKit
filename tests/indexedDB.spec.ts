@@ -44,7 +44,7 @@ describe("indexedDB instance", () => {
       };
     })
 
-    it.only("Should polyfill the structureClone algorithm if it doesn't exist", async () => {
+    it("Should polyfill the structureClone algorithm if it doesn't exist", async () => {
       // @ts-expect-error
       delete global.structuredClone
 
