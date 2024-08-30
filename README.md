@@ -1,7 +1,7 @@
 ![example workflow](https://github.com/AllanPinheiroDeLima/indexedDBWrapper/actions/workflows/main.yml/badge.svg)
 
 ```markdown
-# SimpleDataStore
+# IndexedKit
 
 Um repositório simples para gerenciar um armazenamento de dados utilizando IndexedDB em aplicações web. O `DataStore` oferece uma interface para manipulação de dados de forma assíncrona, permitindo operações como inserção, atualização, busca e remoção de documentos.
 
