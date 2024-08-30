@@ -275,4 +275,8 @@ export class DataStore<T extends Object> {
   public async findOne<T>(findOptions: Record<string, unknown>, collectionName?: string): Promise<T & { id: string }> {
     return {} as T & { id: string }
   }
+
+  public getDataStore() {
+    return this.database;
+  }
 }
