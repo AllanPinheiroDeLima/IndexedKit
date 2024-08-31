@@ -30,7 +30,7 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     name: 'happy-dom',
-    root: './tests',
+    root: '.',
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.ts'],
@@ -41,6 +41,7 @@ export default defineConfig({
       reportsDirectory: './coverage',
       exclude: ['**/node_modules/**'],
       provider: 'istanbul', // or 'v8'
+      include: ['src/**/*.ts'],
     },
   },
 })
