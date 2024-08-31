@@ -6,9 +6,9 @@ export type IndexOpt = {
   unique: boolean
 }
 
-export type DataStoreOptions = {
+export type DataStoreOptions<T> = {
   idGenerator?: (...args: any[]) => string
-  idKey?: string
+  idKey?: keyof T
   version?: number
   indexes?: Array<IndexOpt>
 }

@@ -5,20 +5,21 @@ import { BaseResponse, DataStoreOptions, FindOptions, WithRequired } from "./typ
 import { SearchEngine } from "./SearchEngine";
 import { merge } from "lodash";
 import { CollectionNotFoundError } from "./errors/CollectionNotFound.error";
+import { DocumentNotFoundError } from "./errors/DocumentNotFound.error";
 
 export class DataStore<T extends Object> {
   protected isOpen: boolean = false;
   protected database!: IDBDatabase;
-  protected dataStoreOptions: DataStoreOptions;
+  protected dataStoreOptions: DataStoreOptions<T>;
   protected searchEngine: SearchEngine<T>;
 
   private databaseName: string;
   private collectionName: string;
 
-  constructor(databaseName: string, collectionName: string, options?: DataStoreOptions) {
+  constructor(databaseName: string, collectionName: string, options?: DataStoreOptions<T>) {
     this.databaseName = databaseName;
     this.collectionName = collectionName;
-    this.dataStoreOptions = options ?? {} as DataStoreOptions;
+    this.dataStoreOptions = options ?? {} as DataStoreOptions<T>;
 
     this.searchEngine = new SearchEngine();
   }
@@ -75,7 +76,7 @@ export class DataStore<T extends Object> {
     }
 
     return this.database.createObjectStore(collectionName, {
-      keyPath: this.dataStoreOptions?.idKey ?? "id"
+      keyPath: this.dataStoreOptions?.idKey as string ?? "id"
     });
   }
 
@@ -275,6 +276,29 @@ export class DataStore<T extends Object> {
     });
   }
 
+  public async remove(findOptions: WithRequired<Omit<FindOptions<T>, "limit" | "offset">, "where">, collectionName?: string): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      const isDatabaseInvalidError = this.validateDatabaseExistence();
+      if (isDatabaseInvalidError) {
+        return reject(isDatabaseInvalidError)
+      }
+      
+      const foundDoc = await this.findOne(findOptions, collectionName);
+
+      if (!foundDoc) {
+        return reject(new DocumentNotFoundError());
+      }
+
+      try {
+        console.log(this.dataStoreOptions.idKey, foundDoc[this.dataStoreOptions.idKey as keyof T ?? "id"])
+        await this.removeByIdKey(foundDoc[this.dataStoreOptions.idKey ?? "id"] as string, collectionName);
+        resolve()
+      } catch(err) {
+        reject(err)
+      }
+    });
+  }
+
   public async clearCollection(collectionName?: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const isDatabaseInvalidError = this.validateDatabaseExistence();
@@ -385,7 +409,7 @@ export class DataStore<T extends Object> {
     })
   }
 
-  public async findOne(findOptions: WithRequired<Omit<FindOptions<T>, "limit" | "offset">, "where">, collectionName?: string): Promise<(T | { id: string }) | null> {
+  public async findOne(findOptions: WithRequired<Omit<FindOptions<T>, "limit" | "offset">, "where">, collectionName?: string): Promise<(T & { id?: string }) | null> {
     return new Promise(async (resolve, reject) => {
       const isDatabaseInvalidError = this.validateDatabaseExistence();
       if (isDatabaseInvalidError) {
