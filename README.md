@@ -87,7 +87,7 @@ await dataStore.upsert({ id: "1", name: "Alice", age: 31 });
 
 #### Update
 
-Update a record based on a query:
+Update a record based on a query. The update method is used to update records. This operation makes a deep merge of the objects keeping any subFields intact in case they weren't sent to the operation:
 
 ```typescript
 await dataStore.update({ where: { name: "Alice" } }, { age: 32 });
