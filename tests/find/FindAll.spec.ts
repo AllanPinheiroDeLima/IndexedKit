@@ -252,6 +252,51 @@ describe("findAll", () => {
     expect(data.map(data => data.isbn)).toStrictEqual([123456, 345678])
   })
 
+  it("Should bring two records based on the search $and modifier", async () => {
+    const datastore = new DataStore<BookSchema>(databaseName, collectionName);
+    await datastore.init();
+
+    await datastore.insert({title: "Water Buffaloes 2", author: "Mark", isbn: 234516, age: 2});
+
+
+    const data = await datastore.findAll({
+      where: {
+        $and: [
+          { author: "Barney" },
+          { author: "Mark" }
+        ]
+      }
+    });
+
+    expect(data).length(2)
+
+    const authorsFound = data.map(data => data.author)
+    expect(authorsFound).toStrictEqual(expect.arrayContaining(["Barney", "Mark"]))
+  })
+
+  it("Should bring two records based on the search $or modifier", async () => {
+    const datastore = new DataStore<BookSchema>(databaseName, collectionName);
+    await datastore.init();
+
+
+    const data = await datastore.findAll({
+      where: {
+        $or: [
+          { age: 2 },
+          { author: "Barney" }
+        ]
+      }
+    });
+    
+    expect(data).length(2)
+
+    const authorsFound = data.map(data => data.author)
+    expect(authorsFound).toStrictEqual(expect.arrayContaining(["Barney"]))
+
+    const agesFound = data.map(data => data.age)
+    expect(agesFound).toStrictEqual(expect.arrayContaining([2]))
+  })
+
   it("Should apply the limit when set", async () => {
     const datastore = new DataStore<BookSchema>(databaseName, collectionName);
     await datastore.init();

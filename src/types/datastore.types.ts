@@ -1,3 +1,5 @@
+import { BookSchema } from "../../tests/find/FindAll.spec"
+
 export type IndexOpt = {
   name: string
   keyPath: string
@@ -11,20 +13,30 @@ export type DataStoreOptions = {
   indexes?: Array<IndexOpt>
 }
 
-export type FindModifiers = {
-  $gt?: number
-  $gte?: number
-  $lt?: number
-  $lte?: number
-  $ne?: string
-  $in?: (string | number)[]
-  $nin?: string[]
-  $regex?: RegExp | string
+type SourceObj<T> = Partial<Record<keyof T, T[keyof T]>>
+type SourceObjArr<T> = Partial<{
+  [K in keyof T]: T[K][]
+}>
+
+type SourceObjRegex<T> = Partial<Record<keyof T, string | RegExp>>
+
+export type FindModifiers<T> = {
+  $gt: SourceObj<T>
+  $gte: SourceObj<T>
+  $lt: SourceObj<T>
+  $lte: SourceObj<T>
+  $ne: SourceObj<T>
+  $in: SourceObjArr<T>
+  $nin: SourceObjArr<T>
+  $regex: SourceObjRegex<T>
+  $and: Array<SourceObj<T>>
+  $or: Array<SourceObj<T>>
 }
 
 export type FindModifiersWithType<T> = {
-  [K in keyof T | keyof FindModifiers]?: Record<keyof T, T[K extends keyof T ? K : never] | FindModifiers[K extends keyof FindModifiers ? K : never]>;
+  [K in keyof T | keyof FindModifiers<T>]?: T[K extends keyof T ? K : never] | FindModifiers<T>[K extends keyof FindModifiers<T> ? K : never]
 }
+
 
 export type FindOptions<T> = {
   limit?: number
