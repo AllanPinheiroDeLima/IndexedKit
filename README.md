@@ -95,7 +95,7 @@ await dataStore.update({ where: { name: "Alice" } }, { age: 32 });
 
 #### Remove
 
-Remove a record by ID:
+Remove a record by ID. Remember that the type of your key is important! By default, all ids are string, but if you overwrote using the idKey option you should use the correct type to find your record. If it is a number, you should use a number to find. We will address this issue in the future roadmap so the types can hint the ids:
 
 ```typescript
 await dataStore.removeByIdKey("1");
