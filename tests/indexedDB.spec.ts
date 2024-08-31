@@ -23,7 +23,6 @@ describe("indexedDB instance", () => {
       await datastore.init();
 
       indexedDB.open(databaseName).onsuccess = (event) => {
-        // @ts-expect-error
         const db = event.target?.result as IDBDatabase;
         const transaction = db.transaction(collectionName, "readonly");
 
