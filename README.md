@@ -17,7 +17,7 @@ A simple and powerful wrapper for IndexedDB that simplifies data persistence in 
 You can install the `DataStore` library via npm:
 
 ```bash
-npm install indexed-kit
+npm install indexedkit
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ npm install indexed-kit
 First, import the `DataStore` class:
 
 ```typescript
-import { DataStore } from "indexed-kit";
+import { DataStore } from "indexedkit";
 ```
 
 ### Initialization
