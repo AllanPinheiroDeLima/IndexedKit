@@ -2,91 +2,140 @@
 
 # IndexedKit
 
-Um repositório simples para gerenciar um armazenamento de dados utilizando IndexedDB em aplicações web. O `DataStore` oferece uma interface para manipulação de dados de forma assíncrona, permitindo operações como inserção, atualização, busca e remoção de documentos.
+A simple and powerful wrapper for IndexedDB that simplifies data persistence in web applications. The `DataStore` class provides methods for CRUD operations, bulk inserts, and flexible querying capabilities.
 
-## Descrição
+## Features
 
-`DataStore` é uma classe TypeScript que encapsula a funcionalidade do IndexedDB, permitindo que você armazene e recupere dados de maneira eficiente e organizada. A classe oferece métodos para inserir, atualizar, buscar e remover dados, além de garantir a validação de entrada.
+- **CRUD Operations**: Easily create, read, update, and delete records.
+- **Bulk Insert**: Insert multiple records in one go.
+- **Flexible Queries**: Execute queries with conditions and offsets.
+- **Custom ID Generation**: Supports custom ID generators.
+- **Search Engine Integration**: Built-in search capabilities for field-based queries.
 
-## Instalação
+## Installation
 
-Para usar o `SimpleDataStore`, você pode simplesmente importar a classe em seu projeto:
+You can install the `DataStore` library via npm:
 
 ```bash
-npm install simple-data-store
+npm install indexed-kit
 ```
 
-## Uso
+## Usage
 
-Aqui está um exemplo de como usar o `DataStore`:
+### Importing
+
+First, import the `DataStore` class:
 
 ```typescript
-import { DataStore } from 'simple-data-store';
-
-// Crie uma nova instância do DataStore
-const store = new DataStore('myDatabase', 'myCollection');
-
-// Inicialize o banco de dados
-await store.init();
+import { DataStore } from "indexed-kit";
 ```
 
-## Métodos
+### Initialization
 
-### `init()`
-Inicializa o banco de dados. **É obrigatório chamar este método antes de qualquer outra operação**.
+Create an instance of the `DataStore` by specifying the database name, collection name, and optional data store options.
 
 ```typescript
-await store.init(); // Inicializa o banco de dados
+const dataStore = new DataStore<MyDataType>("myDatabase", "myCollection", {
+    idKey: "id",
+    indexes: [{ name: "nameIndex", keyPath: "name", unique: false }],
+    idGenerator: () => "custom-id" // optional custom ID generator
+});
 ```
 
-### `insert(doc: T)`
-Insere um novo documento na coleção.
+### Initialization Method
+
+Initialize the database:
 
 ```typescript
-const newDoc = { name: 'John Doe', age: 30 };
-const insertedDoc = await store.insert(newDoc);
-console.log('Documento inserido:', insertedDoc);
+await dataStore.init();
 ```
 
-### `upsert(doc: T, findOptions: FindOptions<T>)`
-Atualiza um documento existente ou insere um novo se ele não existir.
+### CRUD Operations
+
+#### Insert
+
+Insert a single record:
 
 ```typescript
-const updatedDoc = { id: '1', name: 'John Doe', age: 31 };
-const upsertedDoc = await store.upsert(updatedDoc, { where: { id: '1' } });
-console.log('Documento atualizado ou inserido:', upsertedDoc);
+const newUser = { name: "Alice", age: 30 };
+await dataStore.insert(newUser);
 ```
 
-### `removeByIdKey(idKey: string | number)`
-Remove um documento pelo seu ID.
+#### Bulk Insert
+
+Insert multiple records:
 
 ```typescript
-const idToRemove = '1';
-await store.removeByIdKey(idToRemove);
-console.log(`Documento com ID ${idToRemove} removido com sucesso.`);
+const users = [
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 },
+];
+await dataStore.bulkInsert(users);
 ```
 
-### `findAll(findOptions?: FindOptions<T>)`
-Retorna todos os documentos da coleção.
+#### Upsert
+
+Insert or update a record:
 
 ```typescript
-const allDocs = await store.findAll();
-console.log('Todos os documentos:', allDocs);
+await dataStore.upsert({ id: "1", name: "Alice", age: 31 });
 ```
 
-### `findOne(findOptions: Record<string, unknown>)`
-Busca um único documento com base em critérios especificados.
+#### Update
+
+Update a record based on a query:
 
 ```typescript
-const foundDoc = await store.findOne({ where: { name: 'John Doe' } });
-console.log('Documento encontrado:', foundDoc);
+await dataStore.update({ where: { name: "Alice" } }, { age: 32 });
 ```
 
-## Contribuição
+#### Remove
 
-Contribuições são bem-vindas! Sinta-se à vontade para abrir um pull request ou relatar problemas.
+Remove a record by ID:
 
-## Licença
-
-Esse projeto está licenciado sob a [MIT License](LICENSE).
+```typescript
+await dataStore.removeByIdKey("1");
 ```
+
+#### Clear Collection
+
+Clear all records from a collection:
+
+```typescript
+await dataStore.clearCollection();
+```
+
+### Querying
+
+#### Find All
+
+Retrieve all records with optional query parameters:
+
+```typescript
+const allUsers = await dataStore.findAll({ where: { age: 30 } });
+```
+
+#### Find One
+
+Find a single record based on query parameters:
+
+```typescript
+const user = await dataStore.findOne({ where: { name: "Alice" } });
+```
+
+### Error Handling
+
+The `DataStore` class throws specific errors for various scenarios:
+
+- `DatabaseNotDefinedError`: Thrown when the database is not initialized.
+- `InvalidInputError`: Thrown for invalid input data.
+- `CollectionNotFoundError`: Thrown when the specified collection does not exist.
+- `DocumentNotFoundError`: Thrown when the specified document is not found.
+
+### License
+
+This project is licensed under the MIT License.
+
+### Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
