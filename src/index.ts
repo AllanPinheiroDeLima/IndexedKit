@@ -177,6 +177,10 @@ export class DataStore<T extends Object> {
 
       const collection = this.getCollection(transaction, collectionName);
 
+      if (collection instanceof CollectionNotFoundError) {
+        return reject(new CollectionNotFoundError());
+      }
+
       const request = collection.put(doc);
 
       request.onsuccess = () => {
