@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vitest/config'
 import { loadEnv } from "vite";
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -37,7 +38,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage',
       exclude: ['**/node_modules/**'],
-      provider: 'istanbul' // or 'v8'
+      provider: 'istanbul', // or 'v8'
     },
   },
 })

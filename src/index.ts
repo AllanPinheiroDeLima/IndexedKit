@@ -111,6 +111,10 @@ export class DataStore<T extends Object> {
     return new InvalidInputError("Invalid input");
   }
 
+  public bulkInsert(docs: T[], collectionName?: string): Promise<BaseResponse<T[]>> {
+    return Promise.all(docs.map(doc => this.insert(doc, collectionName)))
+  }
+
   public async insert<T extends {}>(doc: T & { id?: string }, collectionName?: string): Promise<BaseResponse<T>> {
 
     return new Promise(async (resolve, reject) => {
@@ -181,7 +185,36 @@ export class DataStore<T extends Object> {
     }); 
   }
 
-  public async update<T>(doc: T, collectionName?: string): Promise<T> {}
+  public async update<T>(finder: FindOptions<T>, doc: T, collectionName?: string): Promise<T> {
+    return new Promise(async (resolve, reject) => {
+      const isInputValid = this.isInputValid(doc);
+      
+      if (isInputValid instanceof InvalidInputError) {
+        return reject(isInputValid);
+      }
+
+      const isDatabaseInvalidError = this.validateDatabaseExistence();
+      if (isDatabaseInvalidError) {
+        return reject(isDatabaseInvalidError)
+      }
+      
+      const database = await this.openDatabase(this.databaseName);
+      const transaction = this.setupTransaction(database, "readwrite");
+
+      const collection = this.getCollection(transaction, collectionName);
+
+      const request = collection.put(doc);
+
+      request.onsuccess = () => {
+        resolve(doc)
+      };
+
+      request.onerror = (event) => {
+        console.log("error on update", event);
+        reject(event)
+      };
+    });
+  }
 
   public async removeByIdKey(idKey: string | number, collectionName?: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
