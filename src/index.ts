@@ -223,7 +223,7 @@ export class DataStore<T extends Object> {
     return resultLength >= limit
   }
 
-  private getCollectionIndexFromInput(where: Record<string, unknown> | undefined, collection: IDBObjectStore) {
+  private getCollectionIndexFromInput(where: Record<string, unknown> | undefined, collection: IDBObjectStore<T>) {
     const indexes = collection.indexNames;
     const keys = Object.keys(where ?? {});
 
@@ -252,8 +252,8 @@ export class DataStore<T extends Object> {
 
       const collectionIndexStart = idbIdxKey ? collection.index(idbIdxKey) : collection;
       
-      collectionIndexStart.openCursor().onsuccess = (event: DbEvent<IDBCursorWithValue>) => {
-        const cursor = event.target?.result;
+      collectionIndexStart.openCursor().onsuccess = (event) => {
+        const cursor = (event.target)?.result as IDBCursorWithValue;
 
         const hasLimitBeenReached = this.validateLimit(acc.length, findOptions?.limit ?? null);
         const hasOffsetBeenReached = this.validateOffset(findOptions?.offset ?? 0, iterationCounter);

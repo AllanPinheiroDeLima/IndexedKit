@@ -9,13 +9,18 @@ namespace globalThis {
 
   interface IDBOpenDBRequest extends IDBRequest<IDBDatabase> {
     onsuccess: (this: IDBOpenDBRequest, ev: DbEvent<IDBDatabase>) => void;
-    onerror: (this: IDBOpenDBRequest, ev: Event) => void;
+    onerror: (this: IDBOpenDBRequest, ev: DbEvent<T>) => void;
+  }
+
+  interface IDBRequest extends IDBRequest<T> {
+    onsuccess: (this: IDBOpenDBRequest, ev: string) => void;
+    onerror: (this: IDBOpenDBRequest, ev: DbEvent<T>) => void;
   }
 
   // change cursor success event
   interface IDBCursorRequest<T> extends IDBRequest<T> {
     onsuccess: (this: IDBCursorRequest<T>, ev: DbEvent<T>) => void;
-    onerror: (this: IDBCursorRequest<T>, ev: Event) => void;
+    onerror: (this: IDBCursorRequest<T>, ev: DbEvent<T>) => void;
   }
 
   interface IDBObjectStore<T> {
@@ -27,15 +32,10 @@ namespace globalThis {
     get(key: IDBValidKey): IDBRequest<T>;
     getAll(): IDBRequest<T[]>;
   }
-}
 
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      DATASTORE_COLLECTION_NAME: string;
-      DATASTORE_DATABASE_NAME: string;
-    }
+  interface IDBTransaction {
+    objectStore(name: string): IDBObjectStore<T>;
   }
-}
 
-export {}
+
+}
