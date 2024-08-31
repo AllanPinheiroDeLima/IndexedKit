@@ -6,13 +6,14 @@ import { resolve } from 'node:path';
 
 export default defineConfig({
   esbuild: {
-    drop: ['console', 'debugger']
+    drop: ['console', 'debugger'],
   },
   build: {
+    sourcemap: true,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'), // ponto de entrada da sua biblioteca
-      name: 'SimpleDataStore', // nome da biblioteca
-      fileName: (format) => `simple-data-store.${format}.js`, // nome do arquivo de saída
+      name: 'IndexedKit', // nome da biblioteca
+      fileName: (format) => `indexed-kit.${format}.js`, // nome do arquivo de saída
       formats: ['es', 'umd'], // formatos de saída
     },
     // rollupOptions: {
@@ -25,6 +26,7 @@ export default defineConfig({
     //   },
     // },
   },
+  root: './src',
   plugins: [tsconfigPaths()],
   test: {
     name: 'happy-dom',

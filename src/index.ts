@@ -194,7 +194,7 @@ export class DataStore<T extends Object> {
     }); 
   }
 
-  public async update<T>(finder: FindOptions<T>, doc: T, collectionName?: string): Promise<T> {
+  public async update(finder: FindOptions<T>, doc: T, collectionName?: string): Promise<T | null> {
     return new Promise(async (resolve, reject) => {
       const isInputValid = this.isInputValid(doc);
       
@@ -203,20 +203,31 @@ export class DataStore<T extends Object> {
       }
 
       const isDatabaseInvalidError = this.validateDatabaseExistence();
+      
       if (isDatabaseInvalidError) {
         return reject(isDatabaseInvalidError)
       }
-
-      const currentDoc = await this.findOne(finder, collectionName);
-
-      if (!currentDoc) {
-        return null
+      
+      let currentDoc;
+      
+      try {
+        [currentDoc] = await this.findAll(finder, collectionName);
+        if (!currentDoc) {
+          return resolve(null)
+        }
+      } catch(err) {
+        return reject(err)
       }
+      
 
       const database = await this.openDatabase(this.databaseName);
       const transaction = this.setupTransaction(database, "readwrite");
 
       const collection = this.getCollection(transaction, collectionName);
+
+      if (collection instanceof CollectionNotFoundError) {
+        return reject(new CollectionNotFoundError());
+      }
 
       const mergedObj = merge(currentDoc, doc);
 
@@ -324,6 +335,10 @@ export class DataStore<T extends Object> {
 
       const collection = this.getCollection(transaction, collectionName);
 
+      if (collection instanceof CollectionNotFoundError) {
+        return reject(new CollectionNotFoundError());
+      }
+
       const acc: T[] = [];
 
       let iterationCounter = 0;
@@ -368,10 +383,42 @@ export class DataStore<T extends Object> {
     })
   }
 
-  public async findOne(findOptions: Record<string, unknown>, collectionName?: string): Promise<T | { id: string }> {
-    const [firstDoc] = await this.findAll(findOptions, collectionName);
+  public async findOne(findOptions: FindOptions<T>, collectionName?: string): Promise<(T | { id: string }) | null> {
+    return new Promise(async (resolve, reject) => {
+      const isDatabaseInvalidError = this.validateDatabaseExistence();
+      if (isDatabaseInvalidError) {
+        return reject(isDatabaseInvalidError)
+      }
+      
+      const database = await this.openDatabase(this.databaseName);
+      const transaction = this.setupTransaction(database, "readonly");
 
-    return firstDoc
+      const collection = this.getCollection(transaction, collectionName);
+
+      if (collection instanceof CollectionNotFoundError) {
+        return reject(new CollectionNotFoundError());
+      }
+
+      const idbIdxKey = this.getCollectionIndexFromInput(findOptions, collection);
+
+      const collectionIndexStart = idbIdxKey ? collection.index(idbIdxKey) : collection;
+      
+      collectionIndexStart.openCursor().onsuccess = (event) => {
+        const cursor = (event.target)?.result as IDBCursorWithValue;
+
+        if (cursor) {
+          const isValueFound = this.searchEngine.exec(findOptions, cursor.value);
+
+          if (isValueFound) {
+            resolve(cursor.value);
+          } else {
+            cursor.continue();
+          }
+        } else {
+          resolve(null);
+        }
+      }
+    });
   }
 
   public getDataStore() {
