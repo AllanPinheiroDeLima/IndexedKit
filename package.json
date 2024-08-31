@@ -7,7 +7,7 @@
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest run --watch",
+    "test:watch": "vitest --watch",
     "build": "vite build"
   },
   "keywords": [],

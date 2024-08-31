@@ -12,19 +12,18 @@ export type DataStoreOptions = {
 }
 
 export type FindModifiers = {
-  $eq?: string
   $gt?: number
   $gte?: number
   $lt?: number
   $lte?: number
   $ne?: string
-  $in?: string[]
+  $in?: (string | number)[]
   $nin?: string[]
-  $regex?: RegExp
+  $regex?: RegExp | string
 }
 
 export type FindModifiersWithType<T> = {
-  [K in keyof T]?: FindModifiers | T[K];
+  [K in keyof T | keyof FindModifiers]?: Record<keyof T, T[K extends keyof T ? K : never] | FindModifiers[K extends keyof FindModifiers ? K : never]>;
 }
 
 export type FindOptions<T> = {

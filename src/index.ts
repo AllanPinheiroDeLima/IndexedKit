@@ -1,13 +1,14 @@
 import { v7 as GenId } from "uuid";
 import { DatabaseNotDefinedError } from "./errors/DatabaseNotDefined.error";
 import { InvalidInputError } from "./errors/InvalidaInput.error";
-import { DataStoreOptions, FindOptions } from "./types/datastore.types";
+import { BaseResponse, DataStoreOptions, FindOptions } from "./types/datastore.types";
 import { SearchEngine } from "./SearchEngine";
 
 export class DataStore<T extends Object> {
   protected isOpen: boolean = false;
   protected database!: IDBDatabase;
   protected dataStoreOptions: DataStoreOptions;
+  protected searchEngine: SearchEngine<T>;
 
   private databaseName: string;
   private collectionName: string;
@@ -16,6 +17,8 @@ export class DataStore<T extends Object> {
     this.databaseName = databaseName;
     this.collectionName = collectionName;
     this.dataStoreOptions = options ?? {} as DataStoreOptions;
+
+    this.searchEngine = new SearchEngine();
   }
 
   public async init(): Promise<IDBDatabase> {
@@ -220,6 +223,15 @@ export class DataStore<T extends Object> {
     return resultLength >= limit
   }
 
+  private getCollectionIndexFromInput(where: Record<string, unknown> | undefined, collection: IDBObjectStore) {
+    const indexes = collection.indexNames;
+    const keys = Object.keys(where ?? {});
+
+    const firstIndexKey = keys.find(key => indexes.contains(key));
+    
+    return firstIndexKey
+  }
+
   public async findAll(findOptions?: FindOptions<T>, collectionName?: string): Promise<T[]> {
     return new Promise(async (resolve, reject) => {
       const isDatabaseInvalidError = this.validateDatabaseExistence();
@@ -236,10 +248,13 @@ export class DataStore<T extends Object> {
 
       let iterationCounter = 0;
 
-      collection.openCursor().onsuccess = (event: DbEvent<IDBCursorWithValue>) => {
+      const idbIdxKey = this.getCollectionIndexFromInput(findOptions?.where, collection);
+
+      const collectionIndexStart = idbIdxKey ? collection.index(idbIdxKey) : collection;
+      
+      collectionIndexStart.openCursor().onsuccess = (event: DbEvent<IDBCursorWithValue>) => {
         const cursor = event.target?.result;
 
-        // const hasLimitBeenReached = findOptions?.limit && acc.length >= findOptions?.limit;
         const hasLimitBeenReached = this.validateLimit(acc.length, findOptions?.limit ?? null);
         const hasOffsetBeenReached = this.validateOffset(findOptions?.offset ?? 0, iterationCounter);
         
@@ -254,12 +269,9 @@ export class DataStore<T extends Object> {
           }
 
           if (findOptions?.where) {
-            const keys = Object.keys(findOptions.where);
-            
-            const key = keys[0];
-            const value = findOptions.where[key];
-            
-            if (cursor.value[key] === value) {
+            const isValueFound = this.searchEngine.exec(findOptions.where, cursor.value);
+
+            if (isValueFound) {
               acc.push(cursor.value);
               cursor.continue();
             } else {

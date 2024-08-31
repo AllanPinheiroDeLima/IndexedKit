@@ -6,7 +6,7 @@ Um repositório simples para gerenciar um armazenamento de dados utilizando Inde
 
 ## Descrição
 
-`SimpleDataStore` é uma classe TypeScript que encapsula a funcionalidade do IndexedDB, permitindo que você armazene e recupere dados de maneira eficiente e organizada. A classe oferece métodos para inserir, atualizar, buscar e remover dados, além de garantir a validação de entrada.
+`DataStore` é uma classe TypeScript que encapsula a funcionalidade do IndexedDB, permitindo que você armazene e recupere dados de maneira eficiente e organizada. A classe oferece métodos para inserir, atualizar, buscar e remover dados, além de garantir a validação de entrada.
 
 ## Instalação
 

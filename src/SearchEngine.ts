@@ -1,4 +1,5 @@
-import { FindModifiers, FindOptions } from "./types/datastore.types";
+import { BookSchema } from "../tests/find/FindAll.spec";
+import { FindModifiers, FindModifiersWithType, FindOptions } from "./types/datastore.types";
 
 enum FIND_MODIFIERS {
   $eq = "$eq",
@@ -12,47 +13,107 @@ enum FIND_MODIFIERS {
   $regex = "$regex"
 }
 
-export class SearchEngine {
+export class SearchEngine<T extends {}> {
   constructor() {
     console.info("Starting with the default search engine");
   }
 
-  public filter<T extends {}>(filters: FindOptions<T>, currentValue: T) {
-    if (!filters.where) return;
+  filterEq(filters: T, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
+    return keys.every(key => filters[key] === currentValue[key]);
+  }
 
-    const objectKeys = Object.keys(filters.where ?? {}) as FIND_MODIFIERS[];
-    objectKeys.includes(FIND_MODIFIERS.$eq);
+  filterNe(filters: T, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
+    return keys.every(key => filters[key] !== currentValue[key]);
+  }
+
+  filterGt(filters: T, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
+    return keys.some(key => currentValue[key] > filters[key]);
+  }
+
+  filterLt(filters: T, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
+    return keys.some(key => currentValue[key] < filters[key]);
+  }
+
+  filterGte(filters: T, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
+    return keys.some(key => currentValue[key] >= filters[key]);
+  }
+
+  filterLte(filters: T, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
+    return keys.some(key => currentValue[key] <= filters[key]);
+  }
+
+  filterRegex(filters: T, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
     
+    return keys.some(key => {
+      let regexPattern: string | RegExp = "";
+      if (filters[key] instanceof RegExp) {
+        regexPattern = filters[key];
+      } else {
+        regexPattern = filters[key] as string;
+      }
+
+      const regex = new RegExp(regexPattern);
+      return regex.test(currentValue[key] as string);
+    });
+  }
+
+  filterIn(filters: Record<keyof T, unknown[]>, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
+    return keys.some(key => filters[key].includes(currentValue[key]));
+  }
+
+  filterNin(filters: Record<keyof T, unknown[]>, currentValue: T) {
+    const keys = Object.keys(filters) as (keyof T)[];
+    return keys.every(key => !filters[key].includes(currentValue[key]));
+  }
+
+  exec(whereOpts: FindModifiersWithType<T>, currentValue: T) {
+    const objectKeys = Object.keys(whereOpts);
+    
+    const assertions = [];
+
     for (const searchKey of objectKeys) {
       switch (searchKey) {
         case FIND_MODIFIERS.$eq:
-          return this.filterEq(filters.where?.["$eq"], currentValue);
-        // case FIND_MODIFIERS.$gt:
-        //   return this.filterGt(filters.where);
-        // case FIND_MODIFIERS.$gte:
-        //   return this.filterGte(filters.where);
-        // case FIND_MODIFIERS.$lt:
-        //   return this.filterLt(filters.where);
-        // case FIND_MODIFIERS.$lte:
-        //   return this.filterLte(filters.where);
-        // case FIND_MODIFIERS.$ne:
-        //   return this.filterNe(filters.where);
-        // case FIND_MODIFIERS.$in:
-        //   return this.filterIn(filters.where);
-        // case FIND_MODIFIERS.$nin:
-        //   return this.filterNin(filters.where);
-        // case FIND_MODIFIERS.$regex:
-        //   return this.filterRegex(filters.where);
+          assertions.push(this.filterEq(whereOpts.$eq!, currentValue));
+          break;
+        case FIND_MODIFIERS.$gt:
+          assertions.push(this.filterGt(whereOpts.$gt!, currentValue));
+          break;
+        case FIND_MODIFIERS.$gte:
+          assertions.push(this.filterGte(whereOpts.$gte!, currentValue));
+          break;
+        case FIND_MODIFIERS.$lt:
+          assertions.push(this.filterLt(whereOpts.$lt!, currentValue));
+          break
+        case FIND_MODIFIERS.$lte:
+          assertions.push(this.filterLte(whereOpts.$lte!, currentValue));
+          break;
+        case FIND_MODIFIERS.$ne:
+          assertions.push(this.filterNe(whereOpts.$ne, currentValue));
+          break
+        case FIND_MODIFIERS.$in:
+          assertions.push(this.filterIn(whereOpts.$in, currentValue));
+          break
+        case FIND_MODIFIERS.$nin:
+          assertions.push(this.filterNin(whereOpts.$nin, currentValue));
+          break
+        case FIND_MODIFIERS.$regex:
+          assertions.push(this.filterRegex(whereOpts.$regex!, currentValue));
+          break
         default:
-          return {}
-          // return this.filterDefault(filters.where);
+          assertions.push(this.filterEq(whereOpts, currentValue));
+          break;
       }
     }
 
-  }
-
-  filterEq<T extends {}>(filters: T, currentValue: T) {
-    const keys = Object.keys(filters) as (keyof T)[];
-    return keys.every(key => filters[key] === currentValue[key]);
+    return assertions.every(assertion => assertion);
   }
 }
