@@ -37,6 +37,7 @@ export type FindModifiersWithType<T> = {
   [K in keyof T | keyof FindModifiers<T>]?: T[K extends keyof T ? K : never] | FindModifiers<T>[K extends keyof FindModifiers<T> ? K : never]
 }
 
+export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
 export type FindOptions<T> = {
   limit?: number

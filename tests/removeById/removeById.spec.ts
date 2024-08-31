@@ -32,15 +32,14 @@ describe("removeById", () => {
     await datastore.removeByIdKey("1a");
     
     indexedDB.open(databaseName).onsuccess = (event) => {
-      // @ts-expect-error
       const db = event.target?.result;
       const tx = db.transaction(collectionName, "readonly");
-      const store = tx.objectStore(collectionName) as IDBObjectStore;
+      const store = tx.objectStore(collectionName) as IDBObjectStore<BookSchema>;
       const request = store.getAll();
 
       request.onsuccess = (event) => {
         // @ts-expect-error
-        const result = event.target.result;
+        const result = event.target?.result;
         expect(result).toHaveLength(2);
         expect(result.find((item: any) => item.id === "1a")).toBeUndefined();
         done(null)
@@ -71,15 +70,14 @@ describe("removeById", () => {
     await datastore.removeByIdKey(234567);
 
     indexedDB.open(databaseName).onsuccess = (event) => {
-      // @ts-expect-error
       const db = event.target?.result;
       const tx = db.transaction(collectionName, "readonly");
-      const store = tx.objectStore(collectionName) as IDBObjectStore;
+      const store = tx.objectStore(collectionName) as IDBObjectStore<BookSchema>;
       const request = store.getAll();
 
       request.onsuccess = (event) => {
         // @ts-expect-error
-        const result = event.target.result;
+        const result = event.target?.result;
         expect(result).toHaveLength(2);
         expect(result.find((item: any) => item.id === "2b")).toBeUndefined();
         done(null)

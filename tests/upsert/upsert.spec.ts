@@ -28,7 +28,7 @@ describe("upsert", () => {
 
     const data = {title: "Memories Quarry", author: "Frank", isbn: 234567};
 
-    await datastore.upsert({ where: { isbn: 234567 } }, data, collectionName);
+    await datastore.upsert(data, collectionName);
 
     indexedDB.open(databaseName, 3).onsuccess = (event) => {
       const db = event.target.result;
@@ -52,7 +52,7 @@ describe("upsert", () => {
 
     const data = {title: "Memories Quarry", author: "Frank", isbn: 987654};
 
-    await datastore.upsert({ where: { isbn: 987654 } }, data, collectionName);
+    await datastore.upsert(data, collectionName);
 
     indexedDB.open(databaseName, 3).onsuccess = (event) => {
       const db = event.target.result;
@@ -72,7 +72,7 @@ describe("upsert", () => {
 
     const data = {title: "Memories Quarry", author: "Frank", isbn: 987654};
 
-    const fnCall = () => datastore.upsert({ where: { isbn: 987654 } }, data, "wrong-collection");
+    const fnCall = () => datastore.upsert(data, "wrong-collection");
     expect(fnCall()).rejects.toThrowError();
     expect(fnCall()).rejects.toBeInstanceOf(Error);
   })

@@ -1,7 +1,7 @@
 import { v7 as GenId } from "uuid";
 import { DatabaseNotDefinedError } from "./errors/DatabaseNotDefined.error";
 import { InvalidInputError } from "./errors/InvalidaInput.error";
-import { BaseResponse, DataStoreOptions, FindOptions } from "./types/datastore.types";
+import { BaseResponse, DataStoreOptions, FindOptions, WithRequired } from "./types/datastore.types";
 import { SearchEngine } from "./SearchEngine";
 import { merge } from "lodash";
 import { CollectionNotFoundError } from "./errors/CollectionNotFound.error";
@@ -146,12 +146,14 @@ export class DataStore<T extends Object> {
         [this.dataStoreOptions.idKey ?? "id"]: this.dataStoreOptions.idGenerator ? this.dataStoreOptions.idGenerator() : id
       };
       
+      // @ts-expect-error
       const request = collection.add(docToSave);
 
       request.onsuccess = () => {
         resolve(docToSave)
       };
 
+      // @ts-expect-error
       request.onerror = (event) => {
         console.log("error on insert", event);
         reject(event)
@@ -159,7 +161,7 @@ export class DataStore<T extends Object> {
     });
   }
 
-  public async upsert(findOptions: FindOptions<T>, doc: T, collectionName?: string): Promise<T> {
+  public async upsert(doc: T, collectionName?: string): Promise<T> {
     return new Promise(async (resolve, reject) => {
       const isInputValid = this.isInputValid(doc);
       
@@ -194,7 +196,7 @@ export class DataStore<T extends Object> {
     }); 
   }
 
-  public async update(finder: FindOptions<T>, doc: T, collectionName?: string): Promise<T | null> {
+  public async update(finder: WithRequired<Omit<FindOptions<T>, "limit" | "offset">, "where">, doc: T, collectionName?: string): Promise<T | null> {
     return new Promise(async (resolve, reject) => {
       const isInputValid = this.isInputValid(doc);
       
@@ -219,7 +221,6 @@ export class DataStore<T extends Object> {
         return reject(err)
       }
       
-
       const database = await this.openDatabase(this.databaseName);
       const transaction = this.setupTransaction(database, "readwrite");
 
@@ -347,6 +348,7 @@ export class DataStore<T extends Object> {
 
       const collectionIndexStart = idbIdxKey ? collection.index(idbIdxKey) : collection;
       
+      // @ts-expect-error
       collectionIndexStart.openCursor().onsuccess = (event) => {
         const cursor = (event.target)?.result as IDBCursorWithValue;
 
@@ -383,7 +385,7 @@ export class DataStore<T extends Object> {
     })
   }
 
-  public async findOne(findOptions: FindOptions<T>, collectionName?: string): Promise<(T | { id: string }) | null> {
+  public async findOne(findOptions: WithRequired<Omit<FindOptions<T>, "limit" | "offset">, "where">, collectionName?: string): Promise<(T | { id: string }) | null> {
     return new Promise(async (resolve, reject) => {
       const isDatabaseInvalidError = this.validateDatabaseExistence();
       if (isDatabaseInvalidError) {
@@ -403,11 +405,12 @@ export class DataStore<T extends Object> {
 
       const collectionIndexStart = idbIdxKey ? collection.index(idbIdxKey) : collection;
       
+      // @ts-expect-error
       collectionIndexStart.openCursor().onsuccess = (event) => {
         const cursor = (event.target)?.result as IDBCursorWithValue;
 
         if (cursor) {
-          const isValueFound = this.searchEngine.exec(findOptions, cursor.value);
+          const isValueFound = this.searchEngine.exec(findOptions.where, cursor.value);
 
           if (isValueFound) {
             resolve(cursor.value);
