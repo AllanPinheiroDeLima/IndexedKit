@@ -3,6 +3,8 @@ import { DatabaseNotDefinedError } from "./errors/DatabaseNotDefined.error";
 import { InvalidInputError } from "./errors/InvalidaInput.error";
 import { BaseResponse, DataStoreOptions, FindOptions } from "./types/datastore.types";
 import { SearchEngine } from "./SearchEngine";
+import { merge } from "lodash";
+import { CollectionNotFoundError } from "./errors/CollectionNotFound.error";
 
 export class DataStore<T extends Object> {
   protected isOpen: boolean = false;
@@ -82,7 +84,10 @@ export class DataStore<T extends Object> {
     return this.init();
   }
 
-  private getCollection(transaction: IDBTransaction, collectionName?: string) {
+  private getCollection(transaction: IDBTransaction, collectionName?: string): IDBObjectStore<T> | CollectionNotFoundError {
+    if (!this.database.objectStoreNames.contains(collectionName ?? this.collectionName)) {
+      return new CollectionNotFoundError();
+    }
     return transaction.objectStore(collectionName ?? this.collectionName);
   }
 
@@ -154,7 +159,7 @@ export class DataStore<T extends Object> {
     });
   }
 
-  public async upsert(doc: T, findOptions: FindOptions<T>, collectionName?: string): Promise<T> {
+  public async upsert(findOptions: FindOptions<T>, doc: T, collectionName?: string): Promise<T> {
     return new Promise(async (resolve, reject) => {
       const isInputValid = this.isInputValid(doc);
       
@@ -197,13 +202,21 @@ export class DataStore<T extends Object> {
       if (isDatabaseInvalidError) {
         return reject(isDatabaseInvalidError)
       }
-      
+
+      const currentDoc = await this.findOne(finder, collectionName);
+
+      if (!currentDoc) {
+        return null
+      }
+
       const database = await this.openDatabase(this.databaseName);
       const transaction = this.setupTransaction(database, "readwrite");
 
       const collection = this.getCollection(transaction, collectionName);
 
-      const request = collection.put(doc);
+      const mergedObj = merge(currentDoc, doc);
+
+      const request = collection.put(mergedObj);
 
       request.onsuccess = () => {
         resolve(doc)
@@ -228,6 +241,10 @@ export class DataStore<T extends Object> {
 
       const collection = this.getCollection(transaction, collectionName);
 
+      if (collection instanceof CollectionNotFoundError) {
+        return reject(new CollectionNotFoundError());
+      }
+
       const request = collection.delete(idKey);
 
       request.onsuccess = () => {
@@ -243,7 +260,33 @@ export class DataStore<T extends Object> {
   }
 
   public async clearCollection(collectionName?: string): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      const isDatabaseInvalidError = this.validateDatabaseExistence();
+      if (isDatabaseInvalidError) {
+        return reject(isDatabaseInvalidError)
+      }
+      
+      const database = await this.openDatabase(this.databaseName);
+      const transaction = this.setupTransaction(database, "readwrite");
 
+      const collection = this.getCollection(transaction, collectionName);
+
+      if (collection instanceof CollectionNotFoundError) {
+        return reject(collection);
+      }
+
+      const request = collection.clear();
+
+      request.onsuccess = () => {
+        console.debug(`Coleção ${collectionName} limpa com sucesso.`);
+        resolve();
+      }
+
+      request.onerror = (event) => {
+        console.log("error on clear", event);
+        reject(event)
+      }
+    });
   }
 
   private validateOffset(offset: number = 0, iterationCounter: number) {
@@ -321,8 +364,10 @@ export class DataStore<T extends Object> {
     })
   }
 
-  public async findOne<T>(findOptions: Record<string, unknown>, collectionName?: string): Promise<T & { id: string }> {
-    return {} as T & { id: string }
+  public async findOne(findOptions: Record<string, unknown>, collectionName?: string): Promise<T | { id: string }> {
+    const [firstDoc] = await this.findAll(findOptions, collectionName);
+
+    return firstDoc
   }
 
   public getDataStore() {

@@ -1,5 +1,5 @@
 export const ERROR_CODES = {
   COD001: "DATABASE_NOT_INITIALIZED",
-  CODOO2: "Collection not initialized",
+  CODOO2: "COLLECTION NOT FOUND",
   COD003: "INVALID_DATA",
 }
