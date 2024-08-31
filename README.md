@@ -44,7 +44,7 @@ const dataStore = new DataStore<MyDataType>("myDatabase", "myCollection", {
 
 ### Initialization Method
 
-Initialize the database:
+Initialize the database. It is mandatory the call of this method, otherwise, the database will return an error:
 
 ```typescript
 await dataStore.init();
@@ -75,10 +75,14 @@ await dataStore.bulkInsert(users);
 
 #### Upsert
 
-Insert or update a record:
+Insert or update a record. **important** if you are trying to update an existing record, this will shallow merge the existing record, overwriting any existing data with your new data:
 
 ```typescript
+const userInDataBase = { id: "1", name: "Alice", age: 31, subFields: [] }
+
 await dataStore.upsert({ id: "1", name: "Alice", age: 31 });
+
+// When you try and find this record again, the subFields WILL be missing! Be warned!
 ```
 
 #### Update
