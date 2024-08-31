@@ -119,6 +119,12 @@ Retrieve all records with optional query parameters:
 const allUsers = await dataStore.findAll({ where: { age: 30 } });
 ```
 
+You can paginate the records using limit and offset keys:
+
+```typescript
+const allUsers = await dataStore.findAll({ where: { age: 30 }, limit: 5, offset: 5 });
+```
+
 #### Find One
 
 Find a single record based on query parameters:
