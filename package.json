@@ -1,6 +1,6 @@
 {
   "name": "indexedkit",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -10,7 +10,11 @@
     "test:watch": "vitest --watch",
     "build": "vite build"
   },
-  "keywords": ["indexeddb", "wrapper", "indexedkit"],
+  "keywords": [
+    "indexeddb",
+    "wrapper",
+    "indexedkit"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
