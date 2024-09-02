@@ -10,7 +10,7 @@
     "test:watch": "vitest --watch",
     "build": "vite build"
   },
-  "keywords": [],
+  "keywords": ["indexeddb", "wrapper", "indexedkit"],
   "author": "",
   "license": "ISC",
   "devDependencies": {
