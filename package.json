@@ -4,6 +4,10 @@
   "description": "",
   "main": "index.js",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AllanPinheiroDeLima/IndexedKit"
+  },
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
